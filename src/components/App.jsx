@@ -18,33 +18,38 @@ export class App extends Component {
 
   componentDidUpdate(prevProps, prevState) {
     if (
-      this.state.page !== prevState.page ||
-      this.state.query !== prevState.query
+      prevState.query !== this.state.query ||
+      prevState.page !== this.state.page
     ) {
-      this.setState({
-        loader: true,
-        forButtonloader: false,
-      });
-
-      request(this.state.query, this.state.page).then(galerry => {
-        this.setState(prev => ({
-          array: [...prev.array, ...galerry.hits],
-          loader: false,
-          forButtonloader: this.state.page < Math.ceil(galerry.totalHits / 12),
-        }));
-      });
+      this.request(this.state.query, this.state.page);
     }
   }
+  request = (query, page) => {
+    request(query, page)
+      .then(galerry =>
+        this.setState(prev => ({
+          array: [...prev.array, ...galerry.hits],
+          forButtonloader: true,
+          loader: false,
+        }))
+      )
+      .catch(error => console.log(error));
+  };
 
   nextPage = () => {
     this.setState(prev => ({
       page: prev.page + 1,
+      forButtonloader: false,
+      loader: true,
     }));
   };
 
   callYouLater = word => {
     this.setState({
       query: word,
+      array: [],
+      page: 1,
+      loader: true,
     });
   };
 
@@ -56,12 +61,16 @@ export class App extends Component {
   };
 
   render() {
-    const { array, forButtonloader, loader, modalOpen, imageURL } = this.state;
+    let { array, forButtonloader, loader, modalOpen, imageURL } = this.state;
+    console.log(this.state.page);
+    console.log(this.state.query);
     return (
       <>
         <Searchbar callYouLater={this.callYouLater} />
         <ImageGallery obj={array} openModal={this.openModal} />
-        {forButtonloader && <LoadMore nextPage={this.nextPage} />}
+        {forButtonloader && array.length > 11 && (
+          <LoadMore nextPage={this.nextPage} />
+        )}
         {loader && <Loader />}
         {array.length > 0 && modalOpen && (
           <Modal img={imageURL} closeModal={this.openModal} />
